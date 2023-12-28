@@ -1,0 +1,83 @@
+npx react-native init OTPLogin
+cd OTPLogin
+npm install react-native-countdown-component
+npm install axios
+
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, Button } from 'react-native';
+import Countdown from 'react-native-countdown-component';
+import axios from 'axios';
+
+const OTPLoginScreen = () => {
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [otp, setOTP] = useState('');
+  const [timerKey, setTimerKey] = useState(0);
+  const [showTimer, setShowTimer] = useState(false);
+
+  const handlePhoneNumberChange = (number) => {
+    setPhoneNumber(number);
+  };
+
+  const handleRequestOTP = () => {
+    // Call serverless function to generate OTP
+    axios.post('your-serverless-function-url', { phoneNumber: phoneNumber })
+      .then((response) => {
+        setOTP(response.data.otp);
+        setShowTimer(true);
+        setTimerKey(timerKey + 1);
+      })
+      .catch((error) => {
+        console.error('Error requesting OTP: ', error);
+      });
+  };
+
+  const handleVerifyOTP = () => {
+    if (otp === '123456') { // Replace with actual serverless OTP validation
+      // Navigate to home screen
+    } else {
+      alert('Invalid OTP');
+    }
+  };
+
+  return (
+    <View>
+      <TextInput
+        placeholder="Enter phone number"
+        value={phoneNumber}
+        onChangeText={handlePhoneNumberChange}
+      />
+      <Button title="Request OTP" onPress={handleRequestOTP} />
+      {showTimer && (
+        <Countdown
+          key={timerKey}
+          until={60}
+          size={20}
+          onFinish={() => setShowTimer(false)}
+          digitStyle={{ backgroundColor: '#FFF' }}
+          digitTxtStyle={{ color: '#000' }}
+          timeToShow={['M', 'S']}
+          timeLabels={{ m: null, s: null }}
+        />
+      )}
+      <TextInput
+        placeholder="Enter OTP"
+        value={otp}
+        onChangeText={(value) => setOTP(value)}
+      />
+      <Button title="Verify OTP" onPress={handleVerifyOTP} />
+    </View>
+  );
+};
+
+export default OTPLoginScreen;
+
+const functions = require('firebase-functions');
+const admin = require('firebase-admin');
+admin.initializeApp();
+
+exports.generateOTP = functions.https.onRequest((req, res) => {
+  const phoneNumber = req.body.phoneNumber;
+  const otp = Math.floor(100000 + Math.random() * 900000); // Generate a random 6-digit OTP
+  // Save the generated OTP to Firestore or Realtime Database for validation
+  return res.status(200).json({ otp: otp });
+});
